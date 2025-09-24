@@ -17,19 +17,20 @@ pub fn build(b: *std.Build) void {
     const use_gles = b.option(bool, "gles", "Build with GLES; not supported on MacOS") orelse false;
     const use_metal = b.option(bool, "metal", "Build with Metal; only supported on MacOS") orelse false;
 
-    const lib: *std.Build.Step.Compile = switch (shared) {
-        inline else => |x| switch (x) {
-            false => std.Build.addStaticLibrary,
-            true => std.Build.addSharedLibrary,
-        }(b, .{
-            .name = "glfw",
+    const lib: *std.Build.Step.Compile = b.addLibrary(.{
+        .name = "glfw",
+        .root_module = b.createModule(.{
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
         }),
-    };
-    lib.addIncludePath(b.path("include"));
+        .linkage = switch (shared) {
+            false => .static,
+            true => .dynamic,
+        },
+    });
+    lib.root_module.addIncludePath(b.path("include"));
     //if (include_src) lib.addIncludePath(b.path("src"));
-    lib.linkLibC();
 
     if (shared) lib.root_module.addCMacro("_GLFW_BUILD_DLL", "1");
 
@@ -54,12 +55,12 @@ pub fn build(b: *std.Build) void {
                 .target = target,
                 .optimize = optimize,
             })) |dep| {
-                lib.linkLibrary(dep.artifact("x11-headers"));
+                lib.root_module.linkLibrary(dep.artifact("x11-headers"));
                 lib.installLibraryHeaders(dep.artifact("x11-headers"));
             }
             if (b.lazyDependency("wayland_headers", .{})) |dep| {
-                lib.addIncludePath(dep.path("wayland"));
-                lib.addIncludePath(dep.path("wayland-protocols"));
+                lib.root_module.addIncludePath(dep.path("wayland"));
+                lib.root_module.addIncludePath(dep.path("wayland-protocols"));
                 lib.installHeadersDirectory(dep.path("wayland"), ".", .{});
                 lib.installHeadersDirectory(dep.path("wayland-protocols"), ".", .{});
             }
@@ -83,7 +84,7 @@ pub fn build(b: *std.Build) void {
     //
     // Source files
     //
-    lib.addCSourceFiles(.{
+    lib.root_module.addCSourceFiles(.{
         .files = &base_sources,
     });
     switch (target.result.os.tag) {
@@ -101,51 +102,51 @@ pub fn build(b: *std.Build) void {
             }
 
             lib.root_module.addCMacro("_GLFW_WIN32", "1");
-            lib.addCSourceFiles(.{
+            lib.root_module.addCSourceFiles(.{
                 .files = &windows_sources,
             });
         },
         .macos => {
             // Transitive dependencies, explicit linkage of these works around
             // ziglang/zig#17130
-            lib.linkFramework("CFNetwork");
-            lib.linkFramework("ApplicationServices");
-            lib.linkFramework("ColorSync");
-            lib.linkFramework("CoreText");
-            lib.linkFramework("ImageIO");
+            lib.root_module.linkFramework("CFNetwork", .{ .needed = true });
+            lib.root_module.linkFramework("ApplicationServices", .{ .needed = true });
+            lib.root_module.linkFramework("ColorSync", .{ .needed = true });
+            lib.root_module.linkFramework("CoreText", .{ .needed = true });
+            lib.root_module.linkFramework("ImageIO", .{ .needed = true });
 
             // Direct dependencies
-            lib.linkSystemLibrary("objc");
-            lib.linkFramework("IOKit");
-            lib.linkFramework("CoreFoundation");
-            lib.linkFramework("AppKit");
-            lib.linkFramework("CoreServices");
-            lib.linkFramework("CoreGraphics");
-            lib.linkFramework("Foundation");
+            lib.root_module.linkSystemLibrary("objc", .{ .needed = true });
+            lib.root_module.linkFramework("IOKit", .{ .needed = true });
+            lib.root_module.linkFramework("CoreFoundation", .{ .needed = true });
+            lib.root_module.linkFramework("AppKit", .{ .needed = true });
+            lib.root_module.linkFramework("CoreServices", .{ .needed = true });
+            lib.root_module.linkFramework("CoreGraphics", .{ .needed = true });
+            lib.root_module.linkFramework("Foundation", .{ .needed = true });
 
             if (use_metal) {
-                lib.linkFramework("Metal");
+                lib.root_module.linkFramework("Metal", .{ .needed = true });
             }
 
             if (use_opengl) {
-                lib.linkFramework("OpenGL");
+                lib.root_module.linkFramework("OpenGL", .{ .needed = true });
             }
 
             lib.root_module.addCMacro("_GLFW_COCOA", "1");
-            lib.addCSourceFiles(.{
+            lib.root_module.addCSourceFiles(.{
                 .files = &macos_sources,
             });
         },
 
         // everything that isn't windows or mac is linux :P
         else => {
-            lib.addCSourceFiles(.{
+            lib.root_module.addCSourceFiles(.{
                 .files = &linux_sources,
             });
 
             if (use_x11) {
                 lib.root_module.addCMacro("_GLFW_X11", "1");
-                lib.addCSourceFiles(.{
+                lib.root_module.addCSourceFiles(.{
                     .files = &linux_x11_sources,
                 });
             }
@@ -153,7 +154,7 @@ pub fn build(b: *std.Build) void {
             if (use_wl) {
                 lib.root_module.addCMacro("_GLFW_WAYLAND", "1");
 
-                lib.addCSourceFiles(.{
+                lib.root_module.addCSourceFiles(.{
                     .files = &linux_wl_sources,
                     .flags = &.{
                         "-Wno-implicit-function-declaration",
