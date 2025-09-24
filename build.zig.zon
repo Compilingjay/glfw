@@ -16,8 +16,8 @@
             .lazy = true,
         },
         .vulkan_headers = .{
-            .url = "https://github.com/Batres3/vulkan-headers/archive/16dd91847f1b4ad2ac12578abca7596c3cecdab6.zip",
-            .hash = "N-V-__8AAP4fFgE5rrh9TTp1H6c3Zqao6Cb_OYmRHQrOr4pY",
+            .url = "git+https://github.com/Compilingjay/vulkan-headers#dfaaa47b3a49dfe5bac72fa540d1b429755ac069",
+            .hash = "N-V-__8AAKEVFgGMrBjuxZ7669nPxcOc-dtUYqNhpsa355NL",
             .lazy = true,
         },
         .wayland_headers = .{
@@ -26,8 +26,8 @@
             .lazy = true,
         },
         .x11_headers = .{
-            .url = "https://github.com/Batres3/x11-headers/archive/80dba49598570c241d2c0ba5ac045a2951d45cad.zip",
-            .hash = "N-V-__8AABeUQgAUPAOubtaj8TZjdxYJ1rGLi4xxLDErTFwt",
+            .url = "git+https://github.com/Compilingjay/x11-headers#07faec2046d58d7781d38dc8775d8a95ee761405",
+            .hash = "N-V-__8AAIyUQgB3B5VLoRxZ6OIasJUeaUSD3c6U2Tjhe7TZ",
             .lazy = true,
         },
     },
