@@ -23,6 +23,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .link_libc = true,
+            .sanitize_c = .trap,
         }),
         .linkage = switch (shared) {
             false => .static,
@@ -89,16 +90,16 @@ pub fn build(b: *std.Build) void {
     });
     switch (target.result.os.tag) {
         .windows => {
-            lib.linkSystemLibrary("gdi32");
-            lib.linkSystemLibrary("user32");
-            lib.linkSystemLibrary("shell32");
+            lib.root_module.linkSystemLibrary("gdi32");
+            lib.root_module.linkSystemLibrary("user32");
+            lib.root_module.linkSystemLibrary("shell32");
 
             if (use_opengl) {
-                lib.linkSystemLibrary("opengl32");
+                lib.root_module.linkSystemLibrary("opengl32");
             }
 
             if (use_gles) {
-                lib.linkSystemLibrary("GLESv3");
+                lib.root_module.linkSystemLibrary("GLESv3");
             }
 
             lib.root_module.addCMacro("_GLFW_WIN32", "1");
